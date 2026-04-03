@@ -8,9 +8,11 @@
   "dependencies": {
     "@discordjs/rest": "^2.5.1",
     "@discordjs/voice": "^0.18.0",
+    "@formatjs/intl": "^3.1.8",
     "@liamcottle/push-receiver": "^0.0.4",
     "@liamcottle/rustplus.js": "latest",
     "discord.js": "^14.21.0",
+    "dotenv": "^16.4.5",
     "ts-node": "^10.9.2"
   }
 }
