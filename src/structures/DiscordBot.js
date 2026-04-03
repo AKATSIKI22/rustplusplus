@@ -15,7 +15,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     https://github.com/alexemanuelol/rustplusplus
-
 */
 
 const FormatJS = require('@formatjs/intl');
@@ -25,7 +24,26 @@ const Path = require('path');
 
 const Battlemetrics = require('../structures/Battlemetrics');
 const Cctv = require('./Cctv');
-const Config = require('../../config');
+
+let Config;
+try {
+    Config = require('../../config');
+}
+catch (e1) {
+    try {
+        Config = require('../../config/config.json');
+    }
+    catch (e2) {
+        try {
+            Config = require('../../config/default.json');
+        }
+        catch (e3) {
+            console.error('Cannot load config from ../../config, ../../config/config.json, or ../../config/default.json');
+            throw e3;
+        }
+    }
+}
+
 const DiscordEmbeds = require('../discordTools/discordEmbeds.js');
 const DiscordTools = require('../discordTools/discordTools');
 const InstanceUtils = require('../util/instanceUtils.js');
@@ -173,12 +191,12 @@ class DiscordBot extends Discord.Client {
             switch (error.code) {
                 case 502: {
                     this.log(this.intlGet(null, 'errorCap'),
-                        this.intlGet(null, 'badGateway', { error: JSON.stringify(error) }), 'error')
+                        this.intlGet(null, 'badGateway', { error: JSON.stringify(error) }), 'error');
                 } break;
 
                 case 503: {
                     this.log(this.intlGet(null, 'errorCap'),
-                        this.intlGet(null, 'serviceUnavailable', { error: JSON.stringify(error) }), 'error')
+                        this.intlGet(null, 'serviceUnavailable', { error: JSON.stringify(error) }), 'error');
                 } break;
 
                 default: {
@@ -302,7 +320,6 @@ class DiscordBot extends Discord.Client {
     createRustplusInstance(guildId, serverIp, appPort, steamId, playerToken) {
         let rustplus = new RustPlus(guildId, serverIp, appPort, steamId, playerToken);
 
-        /* Add rustplus instance to Object */
         this.rustplusInstances[guildId] = rustplus;
         this.activeRustplusInstances[guildId] = true;
 
@@ -373,29 +390,22 @@ class DiscordBot extends Discord.Client {
         }
     }
 
-    /**
-     *  Check if Battlemetrics instances are missing/not required/need update.
-     */
     async updateBattlemetricsInstances() {
         const activeInstances = [];
 
-        /* Check for instances that are missing or need update. */
         for (const guild of this.guilds.cache) {
             const guildId = guild[0];
             const instance = this.getInstance(guildId);
             const activeServer = instance.activeServer;
             if (activeServer !== null && instance.serverList.hasOwnProperty(activeServer)) {
                 if (instance.serverList[activeServer].battlemetricsId !== null) {
-                    /* A Battlemetrics ID exist. */
                     const battlemetricsId = instance.serverList[activeServer].battlemetricsId;
                     if (!activeInstances.includes(battlemetricsId)) {
                         activeInstances.push(battlemetricsId);
                         if (this.battlemetricsInstances.hasOwnProperty(battlemetricsId)) {
-                            /* Update */
                             await this.battlemetricsInstances[battlemetricsId].evaluation();
                         }
                         else {
-                            /* Add */
                             const bmInstance = new Battlemetrics(battlemetricsId);
                             await bmInstance.setup();
                             this.battlemetricsInstances[battlemetricsId] = bmInstance;
@@ -403,12 +413,10 @@ class DiscordBot extends Discord.Client {
                     }
                 }
                 else {
-                    /* Battlemetrics ID is missing, try with server name. */
                     const name = instance.serverList[activeServer].title;
                     const bmInstance = new Battlemetrics(null, name);
                     await bmInstance.setup();
                     if (bmInstance.lastUpdateSuccessful) {
-                        /* Found an Id, is it a new Id? */
                         instance.serverList[activeServer].battlemetricsId = bmInstance.id;
                         this.setInstance(guildId, instance);
 
@@ -430,11 +438,9 @@ class DiscordBot extends Discord.Client {
                 if (!activeInstances.includes(content.battlemetricsId)) {
                     activeInstances.push(content.battlemetricsId);
                     if (this.battlemetricsInstances.hasOwnProperty(content.battlemetricsId)) {
-                        /* Update */
                         await this.battlemetricsInstances[content.battlemetricsId].evaluation();
                     }
                     else {
-                        /* Add */
                         const bmInstance = new Battlemetrics(content.battlemetricsId);
                         await bmInstance.setup();
                         this.battlemetricsInstances[content.battlemetricsId] = bmInstance;
@@ -443,7 +449,6 @@ class DiscordBot extends Discord.Client {
             }
         }
 
-        /* Find instances that are no longer required and delete them. */
         const remove = Object.keys(this.battlemetricsInstances).filter(e => !activeInstances.includes(e));
         for (const id of remove) {
             delete this.battlemetricsInstances[id];
@@ -530,7 +535,6 @@ class DiscordBot extends Discord.Client {
             return false;
         }
 
-        /* If role isn't setup yet, validate as true */
         if (instance.role === null) return true;
 
         if (!interaction.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator) &&
